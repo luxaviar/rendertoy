@@ -191,13 +191,13 @@ Vec4f PbrShader::Frag(const VertexOut& v2f) const {
     }
 
     float metallic = mat->metallic;
-    if (mat->metallic_tex) {
-        metallic = mat->metallic_tex->Sample2D(v2f.texcoord).r;
-    }
     float roughness = mat->roughness;
-    if (mat->roughness_tex) {
-        roughness = mat->roughness_tex->Sample2D(v2f.texcoord).r;
+    if (mat->metalroughness_tex) {
+        Vec4f mr = mat->metalroughness_tex->Sample2D(v2f.texcoord);
+        metallic = mr.b;
+        roughness = mr.g;
     }
+
     float ao = 1.0f;
     if (mat->ao_tex) {
         ao = mat->ao_tex->Sample2D(v2f.texcoord).r;

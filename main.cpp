@@ -105,22 +105,19 @@ void test_pbr(Pipeline& pipeline) {
     mat->f0 = { 0.04f };
     mat->ambient_color = {0.09f};
     
-    Texture2D* albedo_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_albedo.tga", true);
+    Texture2D* albedo_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_albedo.png", true);
     mat->albedo_tex = albedo_tex;
 
-    Texture2D* normal_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_normal.tga");
+    Texture2D* normal_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_normal.png");
     mat->normal_tex = normal_tex;
 
-    Texture2D* metallic_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_metalness.tga");
-    mat->metallic_tex = metallic_tex;
+    Texture2D* metalroughness_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_metalroughness.png", true);
+    mat->metalroughness_tex = metalroughness_tex;
 
-    Texture2D* roughness_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_roughness.tga");
-    mat->roughness_tex = roughness_tex;
-
-    Texture2D* occlusion_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_occlusion.tga");
+    Texture2D* occlusion_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_occlusion.png");
     mat->ao_tex = occlusion_tex;
 
-    Texture2D* emission_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_emission.tga", true);
+    Texture2D* emission_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_emission.png", true);
     mat->emission_tex = emission_tex;
 
     Texture3D* irradiance_tex = pipeline.CreateTexture3D("../assets/skybox/valley_irradiance.hdr");
@@ -148,7 +145,7 @@ void test_pbr(Pipeline& pipeline) {
 
     Light light2;
     light2.color = { 1, 1, 1 };
-    light2.intensity = 7.0f;
+    light2.intensity = 3.0f;
     //light2.direction = Quaternion::AngleAxis(45, Vec3f::right) * Vec3f::back;
     light2.direction = Vec3f::back;
     light2.type = LightType::kDirection;
@@ -169,7 +166,7 @@ int main(int argc, const char** argv) {
     //test_blinnphong(pipeline);
     test_pbr(pipeline);
     
-    Camera camera(30, 0.1, 50, { 3, 0, 3 }, Vec3f::zero, Vec3f::up);
+    Camera camera(27, 0.1, 50, { 3, 0, 3 }, Vec3f::zero, Vec3f::up);
     pipeline.Render(camera, Primitive::kTriangle);
     //pipeline.Render(camera, Primitive::kLine);
 
