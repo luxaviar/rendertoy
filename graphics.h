@@ -2,7 +2,6 @@
 
 #include <vector>
 #include "singleton.h"
-#include "triangle.h"
 #include "rendertexture.h"
 #include "vertex.h"
 #include "types.h"

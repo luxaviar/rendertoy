@@ -2,7 +2,6 @@
 
 #include <vector>
 #include "uncopyable.h"
-#include "triangle.h"
 #include "math/mat4.h"
 #include "math/quat.h"
 #include "mesh.h"

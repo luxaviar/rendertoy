@@ -1,8 +1,9 @@
 #pragma once
 
 #include <vector>
+#include <array>
+#include <stdint.h>
 #include "uncopyable.h"
-#include "triangle.h"
 #include "math/mat4.h"
 #include "math/quat.h"
 #include "vertex.h"
