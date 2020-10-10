@@ -6,58 +6,55 @@
 
 namespace rendertoy {
 
-inline Vec3f ACESToneMapping(Vec3f color, float adapted_lum=1.0f) {
-    constexpr float A = 2.51f;
-    constexpr float B = 0.03f;
-    constexpr float C = 2.43f;
-    constexpr float D = 0.59f;
-    constexpr float E = 0.14f;
-
-    color *= adapted_lum;
-    return (color * (A * color + B)) / (color * (C * color + D) + E);
-}
-
 inline float Fd_Lambert() {
-    return 1.0 / math::kPI;
+    return 1.0f / math::kPI;
 }
 
 inline float F_Schlick(float VoH, float f0, float f90) {
-    return f0 + (f90 - f0) * std::pow(1.0 - VoH, 5.0);
+    return f0 + (f90 - f0) * std::pow(math::Clamp(1.0f - VoH, 0.0f, 1.0f), 5.0f);
 }
 
 inline float Fd_Burley(float NoV, float NoL, float LoH, float roughness) {
-    float f90 = 0.5 + 2.0 * roughness * LoH * LoH;
+    float f90 = 0.5f + 2.0f * roughness * LoH * LoH;
     float lightScatter = F_Schlick(NoL, 1.0f, f90);
     float viewScatter = F_Schlick(NoV, 1.0f, f90);
     return lightScatter * viewScatter * (1.0f / math::kPI);
 }
-
-inline float D_GGX(float roughness, float NoH, const Vec3f& n, const Vec3f& h) {
-    float oneMinusNoHSquared = 1.0 - NoH * NoH;    
-    float a = NoH * roughness;
-    float k = roughness / (oneMinusNoHSquared + a * a);
-    return  k * k * (1.0 / math::kPI);
+// The following equation(s) model the distribution of microfacet normals across the area being drawn (aka D())
+// Implementation from "Average Irregularity Representation of a Roughened Surface for Ray Reflection" by T. S. Trowbridge, and K. P. Reitz
+// Follows the distribution function recommended in the SIGGRAPH 2013 course notes from EPIC Games [1], Equation 3.
+inline float D_GGX(float NoH, float roughness) {
+    float alpha = roughness * roughness;
+    float a2 = alpha * alpha;
+    float f = (NoH * NoH) * (a2 - 1.0f) + 1.0f;
+    return a2 / (math::kPI * f * f);
 }
 
-inline Vec3f F_Schlick(const Vec3f& f0, float VoH) {
-    float f = std::pow(1.0 - VoH, 5.0);
-    return f0 * (1.0 - f) + f; //f0 + (1.0f - f0) * f;
+//f90 = 1.0f
+inline Vec3f F_Schlick(const Vec3f& f0, float VoH, float f90=1.0f) {
+    return f0 + (1.0f - f0) * std::pow(1.0f - VoH, 5.0f);
 }
 
-inline Vec3f F_Schlick(const Vec3f& f0, float f90, float VoH) {
-    // Schlick 1994, "An Inexpensive BRDF Model for Physically-Based Rendering"
-    return f0 + (Vec3f(f90) - f0) * std::pow(1.0f - VoH, 5);
-}
+inline Vec3f FresnelSchlickRoughness(float cosTheta, Vec3f F0, float roughness) {
+    return F0 + (Vec3f::Max(Vec3f(1.0f - roughness), F0) - F0) * std::pow(1.0f - cosTheta, 5.0f);
+}   
 
+// Smith Joint GGX
+// Note: Vis = G / (4 * NdotL * NdotV)
+// see Eric Heitz. 2014. Understanding the Masking-Shadowing Function in Microfacet-Based BRDFs. Journal of Computer Graphics Techniques, 3
+// see Real-Time Rendering. Page 331 to 336.
+// see https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg)
 inline float V_SmithGGXCorrelated(float NoV, float NoL, float roughness) {
     float a2 = roughness * roughness;
     float GGXV = NoL * std::sqrt(NoV * NoV * (1.0f - a2) + a2);
     float GGXL = NoV * std::sqrt(NoL * NoL * (1.0f - a2) + a2);
-    return 0.5f / (GGXV + GGXL);
+
+    float GGX = GGXV + GGXL;
+    return 0.5f / GGX;
 }
 
 float V_SmithGGXCorrelatedFast(float NoV, float NoL, float roughness) {
-    float a = roughness;
+    float a = roughness * roughness;
     float GGXV = NoL * (NoV * (1.0f - a) + a);
     float GGXL = NoV * (NoL * (1.0f - a) + a);
     return 0.5f / (GGXV + GGXL);
@@ -66,14 +63,15 @@ float V_SmithGGXCorrelatedFast(float NoV, float NoL, float roughness) {
 inline float GeometrySchlickGGX(float NoV, float k) {
     float nom   = NoV;
     float denom = NoV * (1.0 - k) + k;
-	
+    
     return nom / denom;
 }
   
-inline float GeometrySmith(float NoL, float NoV, float k) {
+inline float GeometrySmith(float NoL, float NoV, float roughness) {
+    float k = (roughness + 1.0f) * (roughness + 1.0f) / 8.0f;
     float ggx1 = GeometrySchlickGGX(NoV, k); // 视线方向的几何遮挡
     float ggx2 = GeometrySchlickGGX(NoL, k); // 光线方向的几何阴影
-	
+    
     return ggx1 * ggx2;
 }
 
@@ -84,23 +82,23 @@ inline Vec3f PrefilteredDFG(float NoV, float roughness) {
     Vec4f r = c0 * roughness + c1;
     float a004 = (math::Min)(r.x * r.x, std::exp2(-9.28 * NoV)) * r.x + r.y;
     return Vec3f(-1.04f * a004 + r.z, 1.04f * a004 + r.w, 0.0f);
-    // 基于Karis的Zioma逼近
-    // return vec2(1.0, pow(1.0 - max(roughness, NoV), 3.0));
 }
 
 Vec3f PbrShader::CalcLight(const Light& light, const VertexOut& v2f, const Vec3f& view_dir, const Vec3f& normal, const Vec3f& albedo,
         const Vec3f& f0, float roughness, float metallic) const {
-    Vec3f radiance = light.color * light.intensity;
+    Vec3f light_color = light.color * light.intensity;
     Vec3f light_dir = -light.direction;
 
     if (light.type == LightType::kPoint) {
         float r2 = (light.position - v2f.world_position).MagnitudeSq();
-        radiance /= r2; // light attenuation
+        light_color /= r2; // light attenuation
         light_dir = (light.position - v2f.world_position).Normalize();
     }
 
-    Vec3f h = (light_dir + view_dir).Normalize();
     float NoL = math::Clamp(normal.Dot(light_dir), 0.0f, 1.0f);
+    if (NoL == 0.0f) return Vec3f::zero;
+
+    Vec3f h = (light_dir + view_dir).Normalize();
     float NoH = math::Clamp(normal.Dot(h), 0.0f, 1.0f);
     float NoV = math::Clamp(normal.Dot(view_dir), 0.0f, 1.0f);
     float VoH = math::Clamp(view_dir.Dot(h), 0.0f, 1.0f);
@@ -108,12 +106,9 @@ Vec3f PbrShader::CalcLight(const Light& light, const VertexOut& v2f, const Vec3f
     Vec3f diffuse = albedo * Fd_Lambert(); //diffuse
     //Vec3f diffuse = albedo * Fd_Burley(NoV, NoL, math::Clamp(light_dir.Dot(h), 0.0f, 1.0f), roughness); //diffuse
 
-    float D = D_GGX(roughness, NoH, normal, h);
+    float D = D_GGX(NoH, roughness);
     Vec3f F = F_Schlick(f0, VoH);
-    
-    float k = std::pow(roughness + 1.0f, 2) / 8.0f;
-    float G = GeometrySmith(NoL, NoV, k);
-    //float G = V_SmithGGXCorrelatedFast(NoV, NoL, roughness);
+    float G = GeometrySmith(NoL, NoV, roughness);
 
     float denominator = 4.0 * NoV * NoL + 0.001f;
     Vec3f specular = (F * D * G) / denominator;
@@ -123,14 +118,14 @@ Vec3f PbrShader::CalcLight(const Light& light, const VertexOut& v2f, const Vec3f
     // for energy conservation, the diffuse and specular light can't
     // be above 1.0 (unless the surface emits light); to preserve this
     // relationship the diffuse component (kd) should equal 1.0 - ks.
-    Vec3f kd = Vec3f(1.0) - ks;
+    Vec3f kd = 1.0f - ks;
     // multiply kd by the inverse metalness such that only non-metals 
     // have diffuse lighting, or a linear blend if partly metal (pure metals
     // have no diffuse light).
     kd *= (1.0 - metallic);
 
     // note that we already multiplied the BRDF by the Fresnel (ks) so we won't multiply by ks again
-    Vec3f color = (kd * diffuse + specular) * radiance * NoL;
+    Vec3f color = (kd * diffuse + specular) * light_color * NoL;
     return color;
 }
 
@@ -154,15 +149,15 @@ Vec3f PbrShader::EvaluateIBL(const Vec3f& view_dir, const Vec3f& normal, const V
     Vec3f lut = mat->brdf_lut->SampleRGB(Vec2f(VoN, roughness));
     //Vec3f lut = PrefilteredDFG(VoN, roughness);
 
-    Vec3f F = F_Schlick(f0, VoN);
-    Vec3f ks = F;
-    Vec3f kd = Vec3f::one - ks;
-    kd *= (1.0 - metallic);
-
-    Vec3f indirect_diffuse = irradiance * albedo * Fd_Lambert();
+    Vec3f indirect_diffuse = irradiance * albedo;
     Vec3f indirect_specular = radiance * (f0 * lut.x + lut.y);
 
-    Vec3f ambient = (kd * indirect_diffuse + indirect_specular) * ao;
+    Vec3f F = FresnelSchlickRoughness(VoN, f0, roughness);
+    Vec3f ks = F;
+    Vec3f kd = 1.0f - ks;
+    kd *= (1.0f - metallic);
+
+    Vec3f ambient = (indirect_diffuse * kd + indirect_specular) * ao;
     return ambient;
 }
 
@@ -202,9 +197,8 @@ Vec4f PbrShader::Frag(const VertexOut& v2f) const {
     if (mat->ao_tex) {
         ao = mat->ao_tex->Sample2D(v2f.texcoord).r;
     }
-
-    Vec3f f0 = Vec3f::Lerp(mat->f0, albedo, metallic);
-
+    
+    Vec3f f0 = Vec3f::Lerp(mat->f0, albedo, metallic);    
     Vec3f color(0.0f);
     if (mat->emission_tex) {
         color += mat->emission_tex->SampleRGB(v2f.texcoord);
@@ -219,13 +213,14 @@ Vec4f PbrShader::Frag(const VertexOut& v2f) const {
     // Vec3f ambient = mat->ambient_color * albedo * ao;
     // color += ambient;
 
-    Vec3f ambient = EvaluateIBL(view_dir, normal, f0, albedo, metallic, roughness, ao);
-    color += ambient;
+     Vec3f ambient = EvaluateIBL(view_dir, normal, f0, albedo, metallic, roughness, ao);
+     color += ambient;
     
     // HDR tonemapping
     // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-    color = ACESToneMapping(color, 1.0f);
+    color = ACESToneMapping(color);
     
+    //return color;
     return LinearToGammaSpace(color);
 }
 

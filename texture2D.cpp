@@ -21,7 +21,7 @@ Texture2D::Texture2D(const char* filename, bool sRGB, TextureWrapMode mode) :
     uint8_t* data = image_load(filename, &width_, &height_, &origin_channel_, 4);
     assert (data);
 
-    texture_.resize(width_, height_);
+    texture_.Resize(width_, height_);
     for (int i = 0; i < height_; ++i) {
         for (int j = 0; j < width_; ++j) {
             uint8_t* pixel = data + (width_ * i + j) * 4;
@@ -43,7 +43,7 @@ Texture2D::Texture2D(float* data, const Vec2i& offset, int image_width, int widt
     height_(height), 
     origin_channel_(origin_channel)
 {
-    texture_.resize(width_, height_);
+    texture_.Resize(width_, height_);
     for (int i = 0; i < height_; ++i) {
         for (int j = 0; j < width_; ++j) {
             int x = offset.x + j;

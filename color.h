@@ -42,4 +42,42 @@ inline Vec3f LinearToGammaSpace (Vec3f linRGB) {
     //return half3(LinearToGammaSpaceExact(linRGB.r), LinearToGammaSpaceExact(linRGB.g), LinearToGammaSpaceExact(linRGB.b))
 }
 
+// Uncharted 2 tone map
+// see: http://filmicworlds.com/blog/filmic-tonemapping-operators/
+inline Vec3f ToneMapUncharted2Impl(Vec3f color) {
+    const float A = 0.15f;
+    const float B = 0.50f;
+    const float C = 0.10f;
+    const float D = 0.20f;
+    const float E = 0.02f;
+    const float F = 0.30f;
+
+    return ((color * (A * color + C * B) + D * E) / (color * (A * color + B) + D * F)) - E / F;
+}
+
+inline Vec3f UnchartedToneMapping(Vec3f color) {
+    const float W = 11.2f;
+    color = ToneMapUncharted2Impl(color * 2.0f);
+    Vec3f whiteScale = 1.0f / ToneMapUncharted2Impl(Vec3f(W));
+    return color * whiteScale;
+}
+
+// Hejl Richard tone map
+// see: http://filmicworlds.com/blog/filmic-tonemapping-operators/
+inline Vec3f HejlRichardToneMapping(Vec3f color) {
+    color = Vec3f::Max(Vec3f(0.0f), color - Vec3f(0.004f));
+    return (color * (6.2f * color + 0.5f)) / (color * (6.2f * color + 1.7f) + 0.06f);
+}
+
+inline Vec3f ACESToneMapping(Vec3f color, float adapted_lum=1.0f) {
+    constexpr float A = 2.51f;
+    constexpr float B = 0.03f;
+    constexpr float C = 2.43f;
+    constexpr float D = 0.59f;
+    constexpr float E = 0.14f;
+
+    color *= adapted_lum;
+    return (color * (A * color + B)) / (color * (C * color + D) + E);
+}
+
 }

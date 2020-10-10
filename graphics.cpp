@@ -1,12 +1,24 @@
 #include "graphics.h"
 #include <algorithm>
 #include <vector>
-#include <math.h>
-#include <assert.h>
+#include <cmath>
+#include <cassert>
 #include "shader/shader.h"
 #include "camera.h"
 
 namespace rendertoy {
+
+Graphics::Graphics() : 
+    near_(0.1f),
+    far_(50.0f),
+    write_depth_(true),
+    cull_(CullMode::kBack),
+    shader_(nullptr),
+    render_texture_(nullptr),
+    render_type_(Primitive::kLine) 
+{
+
+}
 
 void Graphics::SetRenderTarget(RenderTexture* rt) {
     render_texture_ = rt;
@@ -39,6 +51,37 @@ float Graphics::EdgeFunction(float x, float y, const Vec4f& v0, const Vec4f& v1)
     return (v1.y - v0.y) * (x - v0.x) - (v1.x - v0.x) * (y - v0.y);
 }
 
+bool Graphics::InsideTriangle(const Vec2f& pos, const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, 
+    float area2_reciprocal, Vec3f& weight) {
+    const Vec4f& p0 = v0.position;
+    const Vec4f& p1 = v1.position;
+    const Vec4f& p2 = v2.position;
+
+    float x = pos.x;
+    float y = pos.y;
+
+    float e0 = EdgeFunction(x, y, p1, p2);
+    if (e0 < 0.0f) return false;
+
+    float e1 = EdgeFunction(x, y, p2, p0);
+    if (e1 < 0.0f) return false;
+
+    float e2 = EdgeFunction(x, y, p0, p1);
+    if (e2 < 0.0f) return false;
+
+    float alpha = e0 * area2_reciprocal;
+    float beta = e1 * area2_reciprocal;
+    float gamma = e2 * area2_reciprocal;
+
+    //depth in view space reciprocal (z)
+    float w_reciprocal = 1.0f / (alpha * v0.w_reciprocal + beta * v1.w_reciprocal + gamma * v2.w_reciprocal);
+    weight[0] = alpha * v0.w_reciprocal * w_reciprocal;
+    weight[1] = beta * v1.w_reciprocal * w_reciprocal;
+    weight[2] = gamma * v2.w_reciprocal * w_reciprocal;
+
+    return true;
+}
+
 VertexOut Graphics::Lerp(const VertexOut& v0, const VertexOut& v1, float w) {
     VertexOut o;
     o.position = Vec4f::Lerp(v0.position, v1.position, w);
@@ -63,7 +106,7 @@ VertexOut Graphics::RasterizeLerp(const VertexOut& v0, const VertexOut& v1, cons
     return o;
 }
 
-bool Graphics::Cull(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2) {
+bool Graphics::Cull(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2) const {
     bool is_front = EdgeFunction(v2.position.x, v2.position.y, v0.position, v1.position) > 0.0f;
     return cull_ == CullMode::kFront ? is_front : !is_front;
 }
@@ -130,9 +173,9 @@ void Graphics::DrawTriangle(const Vertex& v0, const Vertex& v1, const Vertex& v2
     int height = render_texture_->height();
     for (auto& vert : clip_output_) {
         Vec4f& pos = vert.position;
-        pos.x = 0.5 * width * (pos.x + 1.0);
-        pos.y = 0.5 * height * (pos.y + 1.0);
-        pos.z = 0.5 * (pos.z + 1.0);
+        pos.x = 0.5f * width * (pos.x + 1.0f);
+        pos.y = 0.5f * height * (pos.y + 1.0f);
+        pos.z = 0.5f * (pos.z + 1.0f);
     }
 
     if (clip_output_.size() == 0) return;
@@ -154,143 +197,147 @@ void Graphics::DrawTriangle(const Vertex& v0, const Vertex& v1, const Vertex& v2
             DrawLine(o1.position, o2.position, Vec4f(0.0f, 1.0f, 0.0f, 1.0f));
             DrawLine(o2.position, o0.position, Vec4f(0.0f, 1.0f, 0.0f, 1.0f));
         } else {
-            RasterizeTriangle(o0, o1, o2, is_front);
+            if (is_front) {
+                RasterizeTriangle(o0, o1, o2);
+            } else {
+                RasterizeTriangle(o0, o2, o1);
+            }
         }
     }
 
     clip_output_.clear();
 }
 
-void Graphics::RasterizeTriangle(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, bool is_front) {
-    Vec4f p0 = v0.position;
-    Vec4f p1 = v1.position;
-    Vec4f p2 = v2.position;
+void Graphics::RasterizeTriangle(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2) {
+    const Vec4f& p0 = v0.position;
+    const Vec4f& p1 = v1.position;
+    const Vec4f& p2 = v2.position;
     
-    int x0 = (int)(p0.x);
-    int y0 = (int)(p0.y);
-    int x1 = (int)(p1.x);
-    int y1 = (int)(p1.y);
-    int x2 = (int)(p2.x);
-    int y2 = (int)(p2.y);
-
+    float min_x = math::Min(p0.x, math::Min(p1.x, p2.x));
+    float min_y = math::Min(p0.y, math::Min(p1.y, p2.y));
+    float max_x = math::Max(p0.x, math::Max(p1.x, p2.x));
+    float max_y = math::Max(p0.y, math::Max(p1.y, p2.y));
+    
     Vec2i bound_min;
     Vec2i bound_max;
-    bound_min.x = (std::min)((std::min)((std::min)(x0, x1), x2), render_texture_->width() - 1);
-    bound_min.y = (std::min)((std::min)((std::min)(y0, y1), y2), render_texture_->height() - 1);
+    bound_min.x = math::Max((int)std::floor(min_x), 0);
+    bound_min.y = math::Max((int)std::floor(min_y), 0);
 
-    bound_max.x = (std::min)((std::max)((std::max)(x0, x1), x2), render_texture_->width() - 1);
-    bound_max.y = (std::min)((std::max)((std::max)(y0, y1), y2), render_texture_->height() - 1);
+    bound_max.x = math::Min((int)std::ceil(max_x), render_texture_->width() - 1);
+    bound_max.y = math::Min((int)std::ceil(max_y), render_texture_->height() - 1);
 
+    //FIXME: what about micro triangle?
     float area2_reciprocal = 1.0f / math::Abs((p0.x - p1.x) * (p2.y - p1.y) - (p0.y - p1.y) * (p2.x - p1.x));
 
-    for (auto x = bound_min.x; x <= bound_max.x; ++x) {
-        for (auto y = bound_min.y; y <= bound_max.y; ++y) {
-            float e0 = is_front ? EdgeFunction(x, y, p1, p2) : EdgeFunction(x, y, p2, p1);
-            if (e0 < 0) continue;
-
-            float e1 = is_front ? EdgeFunction(x, y, p2, p0) : EdgeFunction(x, y, p0, p2);
-            if (e1 < 0) continue;
-
-            float e2 = is_front ? EdgeFunction(x, y, p0, p1) : EdgeFunction(x, y, p1, p0);
-            if (e2 < 0) continue;
-
-            float alpha = e0 * area2_reciprocal;
-            float beta = e1 * area2_reciprocal;
-            float gamma = e2 * area2_reciprocal;
-
-            //depth in view space reciprocal (z)
-            float w_reciprocal = 1.0f / (alpha * v0.w_reciprocal + beta * v1.w_reciprocal + gamma * v2.w_reciprocal);
-            float w0 = alpha * v0.w_reciprocal * w_reciprocal;
-            float w1 = beta * v1.w_reciprocal * w_reciprocal;
-            float w2 = gamma * v2.w_reciprocal * w_reciprocal;
-
-            //depth in NDC [-1,1]
-            float z_interpolated = p0.z * w0 + p1.z * w1 + p2.z * w2;
-            if (z_interpolated < render_texture_->GetDepth(x, y)) {
-                if (write_depth_) {
-                    render_texture_->SetDepth(x, y, z_interpolated);
+    int samples = render_texture_->sample_size();
+    for (int x = bound_min.x; x <= bound_max.x; ++x) {
+        for (int y = bound_min.y; y <= bound_max.y; ++y) {
+            Vec2i pixel(x, y);
+            int mask = 0;
+            for (int i = 0; i < samples; ++i) {
+                Vec2f pos = render_texture_->GetSubSample(x, y, i);
+                if (Resolve(pos, pixel, i, v0, v1, v2, area2_reciprocal)) {
+                    mask |= (1 << i);
                 }
+            }
+
+            if (mask != 0) {
+                float fx = x + 0.5f;
+                float fy = y + 0.5f;
+
+                float e0 = EdgeFunction(fx, fy, p1, p2);
+                float e1 = EdgeFunction(fx, fy, p2, p0);
+                float e2 = EdgeFunction(fx, fy, p0, p1);
+
+                float alpha = e0 * area2_reciprocal;
+                float beta = e1 * area2_reciprocal;
+                float gamma = e2 * area2_reciprocal;
+
+                //depth in view space reciprocal (z)
+                float w_reciprocal = 1.0f / (alpha * v0.w_reciprocal + beta * v1.w_reciprocal + gamma * v2.w_reciprocal);
+                float w0 = alpha * v0.w_reciprocal * w_reciprocal;
+                float w1 = beta * v1.w_reciprocal * w_reciprocal;
+                float w2 = gamma * v2.w_reciprocal * w_reciprocal;
+
                 VertexOut o = RasterizeLerp(v0, v1, v2, w0, w1, w2);
+                
                 Vec4f color = shader_->Frag(o);
-                render_texture_->SetColor(x, y, color);
+                for (int i = 0; i < samples; ++i) {
+                    if ((mask & (1 << i)) != 0) {
+                        render_texture_->SetColor(x, y, color, i);
+                    }
+                }
             }
         }
     }
+}
+
+bool Graphics::Resolve(const Vec2f& pos, const Vec2i& pixel, int sub_sample, const VertexOut& v0, const VertexOut& v1, const VertexOut& v2,
+        float area2_reciprocal) const {
+
+    Vec3f w;
+    if (!InsideTriangle(pos, v0, v1, v2, area2_reciprocal, w)) {
+        return false;
+    }
+
+    //depth in NDC [-1,1]
+    float z_interpolated = v0.position.z * w[0] + v1.position.z * w[1] + v2.position.z * w[2];
+    if (z_interpolated >= render_texture_->GetDepth(pixel.x, pixel.y, sub_sample)) {
+        return false;
+    }
+
+    if (write_depth_) {
+        render_texture_->SetDepth(pixel.x, pixel.y, z_interpolated, sub_sample);
+    }
+
+    return true;
 }
 
 // Bresenham's line drawing algorithm
 void Graphics::DrawLine(const Vec4f& begin, const Vec4f& end, const Vec4f& line_color) {
     assert(render_texture_);
 
-    auto x1 = math::Clamp((int)(begin.x + 0.5f), 0, render_texture_->width() - 1);
-    auto y1 = math::Clamp((int)(begin.y + 0.5f), 0, render_texture_->height() - 1);
-    auto x2 = math::Clamp((int)(end.x + 0.5f), 0, render_texture_->width() - 1);
-    auto y2 = math::Clamp((int)(end.y + 0.5f), 0, render_texture_->height() - 1);
+    auto x0 = math::Clamp((int)(begin.x), 0, render_texture_->width() - 1);
+    auto y0 = math::Clamp((int)(begin.y), 0, render_texture_->height() - 1);
+    auto x1 = math::Clamp((int)(end.x), 0, render_texture_->width() - 1);
+    auto y1 = math::Clamp((int)(end.y), 0, render_texture_->height() - 1);
 
-    int x, y, dx, dy, dx1, dy1, px, py, xe, ye, i;
+    bool steep = math::Abs(y1 - y0) > math::Abs(x1 - x0);
+    if (steep) {
+        std::swap(x0, y0);
+        std::swap(x1, y1);
+    }
 
-    dx = x2 - x1;
-    dy = y2 - y1;
-    dx1 = fabs(dx);
-    dy1 = fabs(dy);
-    px = 2 * dy1 - dx1;
-    py = 2 * dx1 - dy1;
+    if (x0 > x1) {
+        std::swap(x0, x1);
+        std::swap(y0, y1);
+    }
 
-    if(dy1 <= dx1) {
-        if(dx >= 0) {
-            x = x1;
-            y = y1;
-            xe = x2;
-        } else {
-            x = x2;
-            y = y2;
-            xe = x1;
-        }
-
-        render_texture_->SetColor(x, y, line_color);
-        
-        for(i = 0; x < xe; i++) {
-            x = x + 1;
-            if (px < 0) {
-                px = px + 2 * dy1;
-            } else {
-                if((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
-                    y = y + 1;
-                } else {
-                    y = y - 1;
-                }
-                px = px + 2 * (dy1 - dx1);
+    int dx = x1 - x0;
+    int dy = math::Abs(y1 - y0);
+    int err = dx / 2;    
+    int ystep = y0 < y1 ? 1 : -1;
+    int y = y0;
+    if (steep) {
+        for (int x = x0; x <= x1; ++x) {
+            render_texture_->SetColor(y, x, line_color);
+            err -= dy;
+            if (err < 0) {
+                y += ystep;
+                err += dx;
             }
-
-            render_texture_->SetColor(x, y, line_color);
         }
     } else {
-        if(dy >= 0) {
-            x = x1;
-            y = y1;
-            ye = y2;
-        } else {
-            x = x2;
-            y = y2;
-            ye = y1;
-        }
-        
-        render_texture_->SetColor(x, y, line_color);
-        for(i = 0; y < ye; i++) {
-            y = y + 1;
-            if(py <= 0) {
-                py = py + 2 * dx1;
-            } else {
-                if((dx < 0 && dy < 0) || (dx > 0 && dy > 0)) {
-                    x = x + 1;
-                } else {
-                    x = x - 1;
-                }
-                py = py + 2 * (dx1 - dy1);
-            }
+        for (int x = x0; x <= x1; ++x) {
             render_texture_->SetColor(x, y, line_color);
+            err -= dy;
+            if (err < 0) {
+                y += ystep;
+                err += dx;
+            }
         }
     }
+    
 }
 
 }

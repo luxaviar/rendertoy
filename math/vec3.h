@@ -352,6 +352,21 @@ Vec3<T> operator *(T scalar, const Vec3<T>& rhs) {
 }
 
 template<typename T>
+Vec3<T> operator /(T scalar, const Vec3<T>& rhs) {
+    return Vec3<T>(scalar / rhs.x, scalar / rhs.y, scalar / rhs.z);
+}
+
+template<typename T>
+Vec3<T> operator -(T scalar, const Vec3<T>& rhs) {
+    return Vec3<T>(scalar - rhs.x, scalar - rhs.y, scalar - rhs.z);
+}
+
+template<typename T>
+Vec3<T> operator +(T scalar, const Vec3<T>& rhs) {
+    return Vec3<T>(scalar + rhs.x, scalar + rhs.y, scalar + rhs.z);
+}
+
+template<typename T>
 const Vec3<T> Vec3<T>::zero((T)0, (T)0, (T)0);
 
 template<typename T>

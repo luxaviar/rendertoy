@@ -46,14 +46,14 @@ void test_blinnphong(Pipeline& pipeline) {
     mat->ambient_color = { 0.04f, 0.04f, 0.04f };
     mat->gloss = 150.0f;
 
-    Texture2D* main_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_albedo.tga", true);
+    Texture2D* main_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_albedo.png", true);
     mat->main_tex = main_tex;
 
-    Texture2D* normal_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_normal.tga");
+    Texture2D* normal_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_normal.png");
     mat->normal_tex = normal_tex;
 
     Model model("../assets/helmet/helmet.obj");
-    model.SetTRS(Vec3f::zero, Quaternion::AngleAxis(30, Vec3f::up), Vec3f(1.0f));
+    model.SetTRS(Vec3f(0.0f, 0.1f, 0.0f), Quaternion::AngleAxis(25, Vec3f::up), Vec3f(1.0f));
     auto& meshes = model.meshes();
     assert(meshes.size() > 0);
     meshes[0].material(mat);
@@ -85,7 +85,7 @@ void test_blinnphong(Pipeline& pipeline) {
 
 void add_skybox(Pipeline& pipeline) {
     SkyboxMaterial* mat = pipeline.CreateMaterial<SkyboxMaterial>();
-    Texture3D* skybox_tex = pipeline.CreateTexture3D("../assets/skybox/valley_skybox.hdr");
+    Texture3D* skybox_tex = pipeline.CreateTexture3D("../assets/skybox/city_skybox.hdr");
     mat->skybox_tex = skybox_tex;
 
     Model model;
@@ -111,7 +111,7 @@ void test_pbr(Pipeline& pipeline) {
     Texture2D* normal_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_normal.png");
     mat->normal_tex = normal_tex;
 
-    Texture2D* metalroughness_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_metalroughness.png", true);
+    Texture2D* metalroughness_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_metalroughness.png");
     mat->metalroughness_tex = metalroughness_tex;
 
     Texture2D* occlusion_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_occlusion.png");
@@ -120,17 +120,17 @@ void test_pbr(Pipeline& pipeline) {
     Texture2D* emission_tex = pipeline.CreateTexture2D("../assets/helmet/helmet_emission.png", true);
     mat->emission_tex = emission_tex;
 
-    Texture3D* irradiance_tex = pipeline.CreateTexture3D("../assets/skybox/valley_irradiance.hdr");
+    Texture3D* irradiance_tex = pipeline.CreateTexture3D("../assets/skybox/city_irradiance.hdr");
     mat->irradiance_tex = irradiance_tex;
 
-    Texture3D* radiance_tex = pipeline.CreateTexture3D("../assets/skybox/valley_radiance.hdr");
+    Texture3D* radiance_tex = pipeline.CreateTexture3D("../assets/skybox/city_radiance.hdr");
     mat->radiance_tex = radiance_tex;
 
     Texture2D* lut_tex = pipeline.CreateTexture2D("../assets/ibl_brdf_lut.png");
     mat->brdf_lut = lut_tex;
 
     Model model("../assets/helmet/helmet.obj");
-    model.SetTRS(Vec3f::zero, Quaternion::AngleAxis(-105, Vec3f::up), Vec3f(1.0f));
+    model.SetTRS(Vec3f(0.0f, 0.1f, 0.0f), Quaternion::AngleAxis(25, Vec3f::up), Vec3f(1.0f));
     auto& meshes = model.meshes();
     assert(meshes.size() > 0);
     meshes[0].material(mat);
@@ -139,15 +139,15 @@ void test_pbr(Pipeline& pipeline) {
     
     Light light1;
     light1.color = { 1, 1, 1 };
-    light1.intensity = 50.0f;
-    light1.position = { -2, 0, 3 };
+    light1.intensity = 2.0f;
+    light1.position = { 2, 2, 2 };
     light1.type = LightType::kPoint;
 
     Light light2;
     light2.color = { 1, 1, 1 };
-    light2.intensity = 3.0f;
-    //light2.direction = Quaternion::AngleAxis(45, Vec3f::right) * Vec3f::back;
-    light2.direction = Vec3f::back;
+    light2.intensity = 1.0f;
+    //light2.direction = Vec3f(-0.7399, -0.6428, -0.1983);
+    light2.direction = Quaternion::AngleAxis(35, Vec3f::up) * Quaternion::AngleAxis(40, Vec3f::right) * Vec3f::left;    
     light2.type = LightType::kDirection;
 
     //pipeline.AddLight(light1);
@@ -159,6 +159,7 @@ int main(int argc, const char** argv) {
     
     Pipeline pipeline;
     RenderTexture render_texture(1280, 720);
+    render_texture.msaa(MSAALevel::k4x);
     render_texture.Clear(Buffers::kColor | Buffers::kDepth);
     pipeline.SetRenderTarget(&render_texture);
     
@@ -166,7 +167,7 @@ int main(int argc, const char** argv) {
     //test_blinnphong(pipeline);
     test_pbr(pipeline);
     
-    Camera camera(27, 0.1, 50, { 3, 0, 3 }, Vec3f::zero, Vec3f::up);
+    Camera camera(40, 0.1, 50, { 0, 0, -3 }, Vec3f::zero, Vec3f::up);
     pipeline.Render(camera, Primitive::kTriangle);
     //pipeline.Render(camera, Primitive::kLine);
 

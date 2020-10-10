@@ -25,7 +25,7 @@ public:
     void DrawTriangle(const Vertex& v0, const Vertex& v1, const Vertex& v2);
 
 protected:
-    Graphics() : near_(0.1f), far_(50.0f), write_depth_(true), cull_(CullMode::kBack), shader_(nullptr), render_texture_(nullptr), render_type_(Primitive::kLine) {}
+    Graphics();
 
 private:
     static constexpr ClipPlane kClipPlanes[] = {
@@ -37,12 +37,17 @@ private:
         {math::Axis::kZ, -1.0f}
     };
 
-    float EdgeFunction(float x, float y, const Vec4f& v0, const Vec4f& v1);
-    void RasterizeTriangle(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, bool is_front);
-    VertexOut RasterizeLerp(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, float w0, float w1, float w2);
-    VertexOut Lerp(const VertexOut& v0, const VertexOut& v1, float w);
+    static float EdgeFunction(float x, float y, const Vec4f& v0, const Vec4f& v1);
+    static bool InsideTriangle(const Vec2f& pos, const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, 
+        float area2_reciprocal, Vec3f& weight);
+    static VertexOut RasterizeLerp(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, float w0, float w1, float w2);
+    static VertexOut Lerp(const VertexOut& v0, const VertexOut& v1, float w);
 
-    bool Cull(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2);
+    void RasterizeTriangle(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2);
+    bool Resolve(const Vec2f& pos, const Vec2i& pixel, int sub_sample, const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, 
+        float area2_reciprocal) const;
+
+    bool Cull(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2) const;
     void Clip(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, std::vector<VertexOut>& result);
     
     std::vector<VertexOut> clip_output_;

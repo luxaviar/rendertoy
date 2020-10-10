@@ -289,6 +289,27 @@ struct Vec2 {
     }
 };
 
+
+template<typename T>
+Vec2<T> operator *(T scalar, const Vec2<T>& rhs) {
+    return Vec2<T>(rhs.x * scalar, rhs.y * scalar);
+}
+
+template<typename T>
+Vec2<T> operator /(T scalar, const Vec2<T>& rhs) {
+    return Vec2<T>(scalar / rhs.x, scalar / rhs.y);
+}
+
+template<typename T>
+Vec2<T> operator -(T scalar, const Vec2<T>& rhs) {
+    return Vec2<T>(scalar - rhs.x, scalar - rhs.y);
+}
+
+template<typename T>
+Vec2<T> operator +(T scalar, const Vec2<T>& rhs) {
+    return Vec2<T>(scalar + rhs.x, scalar + rhs.y);
+}
+
 template<typename T>
 const Vec2<T> Vec2<T>::zero((T)0, (T)0);
 

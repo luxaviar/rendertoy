@@ -50,6 +50,7 @@ private:
     Material* default_material_;
     RenderTexture* render_texture_;
     Primitive render_type_;
+    MSAALevel msaa_;
 };
 
 }

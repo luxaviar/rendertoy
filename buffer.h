@@ -47,7 +47,7 @@ public:
     int width() const { return width_; }
     int height() const { return height_; }
 
-    void resize(int w, int h) {
+    void Resize(int w, int h) {
         width_ = w;
         height_ = h;
         data_.resize(w * h);
@@ -64,7 +64,7 @@ public:
         assert(w >= 0 && w < width_);
         return data_[width_ * h + w];
     }
-
+    
     void Fill(const T& value) {
         std::fill(data_.begin(), data_.end(), value);
     }

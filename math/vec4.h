@@ -271,6 +271,26 @@ struct Vec4 {
 };
 
 template<typename T>
+Vec4<T> operator *(T scalar, const Vec4<T>& rhs) {
+    return Vec4<T>(rhs.x * scalar, rhs.y * scalar, rhs.z * scalar, rhs.w * scalar);
+}
+
+template<typename T>
+Vec4<T> operator /(T scalar, const Vec4<T>& rhs) {
+    return Vec4<T>(scalar / rhs.x, scalar / rhs.y, scalar / rhs.z, scalar / rhs.w);
+}
+
+template<typename T>
+Vec4<T> operator -(T scalar, const Vec4<T>& rhs) {
+    return Vec4<T>(scalar - rhs.x, scalar - rhs.y, scalar - rhs.z, scalar - rhs.w);
+}
+
+template<typename T>
+Vec4<T> operator +(T scalar, const Vec4<T>& rhs) {
+    return Vec4<T>(scalar + rhs.x, scalar + rhs.y, scalar + rhs.z, scalar + rhs.w);
+}
+
+template<typename T>
 const Vec4<T> Vec4<T>::zero((T)0);
 
 template<typename T>
