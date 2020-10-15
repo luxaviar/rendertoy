@@ -133,11 +133,11 @@ Mesh::Mesh(Mesh&& other) noexcept {
 }
 
 void Mesh::AddVertex(Vec4f pos, Vec4f color, Vec3f normal, Vec2f uv) {
-    vertices_.emplace_back(pos, color / 255.0f, normal, uv);
+    vertices_.emplace_back(pos, color, normal, uv);
 }
 
 void Mesh::AddVertex(Vec3f pos, Vec3f color) {
-    vertices_.emplace_back(pos, Vec4f(color.r / 255.0f, color.g / 255.0f, color.b / 255.0f, 1.0f), 
+    vertices_.emplace_back(pos, Vec4f(color.r, color.g, color.b, 1.0f), 
         Vec3f::up, Vec2f::zero);
 }
 

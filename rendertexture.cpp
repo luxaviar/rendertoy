@@ -85,7 +85,8 @@ void RenderTexture::SetDepth(int x, int y, float depth, int sub_sample) {
 
 void RenderTexture::Clear(Buffers buff, const Vec3f& color) {
     if ((buff & Buffers::kColor) == Buffers::kColor) {
-        Vec4f col(color.r, color.g, color.b, 1.0f);
+        Vec3f linear_color = GammaToLinearSpace(color);
+        Vec4f col(linear_color.r, linear_color.g, linear_color.b, 1.0f);
         color_buffer_.Fill(col);
     }
 
@@ -101,8 +102,16 @@ void RenderTexture::ConvertToImage(Buffer<Col3U8>& image_buffer) {
     for (int i = 0; i< height_; ++i) {
         for (int j = 0;j < width_; ++j) {
             Vec4f col = GetColor(j, i);
-            image_buffer.Set(j, height_ - i - 1, 
-                Col3U8(math::Saturate(col.r) * 255.0f, math::Saturate(col.g) * 255.0f, math::Saturate(col.b) * 255.0f));
+            Vec3f color(col.r, col.g, col.b);
+
+            // HDR tonemapping
+            // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
+            color = ACESToneMapping(color);
+
+            color = LinearToGammaSpace(color);
+
+            image_buffer.Set(j, height_ - i - 1, Col3U8(math::Saturate(color.r) * 255, 
+                math::Saturate(color.g) * 255, math::Saturate(color.b) * 255));
         }
     }
 }

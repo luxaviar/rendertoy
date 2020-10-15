@@ -216,12 +216,7 @@ Vec4f PbrShader::Frag(const VertexOut& v2f) const {
      Vec3f ambient = EvaluateIBL(view_dir, normal, f0, albedo, metallic, roughness, ao);
      color += ambient;
     
-    // HDR tonemapping
-    // https://knarkowicz.wordpress.com/2016/01/06/aces-filmic-tone-mapping-curve/
-    color = ACESToneMapping(color);
-    
-    //return color;
-    return LinearToGammaSpace(color);
+    return color;
 }
 
 }

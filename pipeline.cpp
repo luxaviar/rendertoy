@@ -30,8 +30,8 @@ Texture2D* Pipeline::CreateTexture2D(const char* file, bool sRGB) {
     return t;
 }
 
-Texture3D* Pipeline::CreateTexture3D(const char* file) {
-    auto t = new Texture3D(file);
+Texture3D* Pipeline::CreateTexture3D(const char* file, bool sRGB) {
+    auto t = new Texture3D(file, sRGB);
     texture3Ds_.push_back(t);
     return t;
 }

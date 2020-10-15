@@ -5,6 +5,7 @@
 #include "rendertexture.h"
 #include "vertex.h"
 #include "types.h"
+#include "screen_triangle.h"
 
 namespace rendertoy {
 
@@ -36,18 +37,16 @@ private:
         {math::Axis::kZ, 1.0f},
         {math::Axis::kZ, -1.0f}
     };
-
-    static float EdgeFunction(float x, float y, const Vec4f& v0, const Vec4f& v1);
-    static bool InsideTriangle(const Vec2f& pos, const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, 
-        float area2_reciprocal, Vec3f& weight);
-    static VertexOut RasterizeLerp(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, float w0, float w1, float w2);
+        
+    static VertexOut RasterizeLerp(const VertexOut& v0, const VertexOut& v1, float w);
     static VertexOut Lerp(const VertexOut& v0, const VertexOut& v1, float w);
 
-    void RasterizeTriangle(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2);
-    bool Resolve(const Vec2f& pos, const Vec2i& pixel, int sub_sample, const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, 
-        float area2_reciprocal) const;
+    void RasterizeEdgeEquation(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2);
+    void RasterizePixel(const ScreenTriangle& tri, int x, int y);
 
-    bool Cull(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2) const;
+    void RasterizeEdgeWalking(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2);
+    void RasterizeFlatTriangle(const VertexOut* v0, const VertexOut* v1, const VertexOut* v2);
+
     void Clip(const VertexOut& v0, const VertexOut& v1, const VertexOut& v2, std::vector<VertexOut>& result);
     
     std::vector<VertexOut> clip_output_;

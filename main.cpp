@@ -15,6 +15,7 @@
 #include "material/normal_material.h"
 #include "material/pbr_material.h"
 #include "material/skybox_material.h"
+#include "color.h"
 
 using namespace rendertoy;
 
@@ -23,14 +24,45 @@ void test_simple_mesh(Pipeline& pipeline) {
     Mesh mesh;
     mesh.material(mat);
 
-    mesh.AddVertex(Vec3f(-2, 0, 1), Vec3f(217.0, 238.0, 185.0));
-    mesh.AddVertex(Vec3f(0, 2, 1), Vec3f(217.0, 238.0, 185.0));
-    mesh.AddVertex(Vec3f(2, 0, 1), Vec3f(217.0, 238.0, 185.0));
-    mesh.AddVertex(Vec3f(-1, 0.5, 2), Vec3f(185.0, 217.0, 238.0));
-    mesh.AddVertex(Vec3f(2.5, 1.5, 2), Vec3f(185.0, 217.0, 238.0));
-    mesh.AddVertex(Vec3f(4.5, -1, 2), Vec3f(185.0, 217.0, 238.0));
-    mesh.AddTriangle(1, 0, 2);
-    mesh.AddTriangle(4, 3, 5);
+    Vec3f color1 = GammaToLinearSpace(Vec3f(217.0 / 255.0, 238.0 / 255.0, 185.0 / 255.0));
+    Vec3f color2 = GammaToLinearSpace(Vec3f(185.0 / 255.0, 217.0 / 255.0, 238.0 / 255.0));
+
+    mesh.AddVertex(Vec3f(-2, 0, 3), color1);
+    mesh.AddVertex(Vec3f(0, 2, 3), color1);
+    mesh.AddVertex(Vec3f(2, 0, 3), color1);
+
+    mesh.AddVertex(Vec3f(-2, 0, 3), color1);
+    mesh.AddVertex(Vec3f(2, 0, 3), color1);
+    mesh.AddVertex(Vec3f(0, -2, 3), color1);
+
+    mesh.AddVertex(Vec3f(-1, 0.5, 4), color2);
+    mesh.AddVertex(Vec3f(2.5, 1.5, 4), color2);
+    mesh.AddVertex(Vec3f(4.5, -1, 4), color2);
+
+    mesh.AddVertex(Vec3f(-4.5, -1, 4), color2);
+    mesh.AddVertex(Vec3f(-2.5, 1.5, 4), color2);
+    mesh.AddVertex(Vec3f(1, 0.5, 4), color2);
+
+    mesh.AddVertex(Vec3f(-4.5, -1, 4), color2);
+    mesh.AddVertex(Vec3f(1, 0.5, 4), color2);
+    mesh.AddVertex(Vec3f(3, -1, 4), color2);
+
+    mesh.AddVertex(Vec3f(3, -1, 4), color2);
+    mesh.AddVertex(Vec3f(1, 0.5, 4), color2);
+    mesh.AddVertex(Vec3f(3, 1, 4), color2);
+
+    //mesh.AddVertex(Vec3f(-1, 0.5, 4), color2);
+    //mesh.AddVertex(Vec3f(3.5, 1.6, 4), color2);
+    //mesh.AddVertex(Vec3f(1.5, 0.3, 4), color2);
+    
+        
+    mesh.AddTriangle(0, 1, 2);
+    //mesh.AddTriangle(3, 4, 5);
+    mesh.AddTriangle(6, 7, 8);
+    //mesh.AddTriangle(9, 10, 11);
+    //mesh.AddTriangle(12, 13, 14);
+    //mesh.AddTriangle(15, 16, 17);
+    //mesh.AddTriangle(18, 19, 20);
 
     Model model;
     model.AddMesh(std::move(mesh));
@@ -85,7 +117,7 @@ void test_blinnphong(Pipeline& pipeline) {
 
 void add_skybox(Pipeline& pipeline) {
     SkyboxMaterial* mat = pipeline.CreateMaterial<SkyboxMaterial>();
-    Texture3D* skybox_tex = pipeline.CreateTexture3D("../assets/skybox/city_skybox.hdr");
+    Texture3D* skybox_tex = pipeline.CreateTexture3D("../assets/skybox/city_skybox.hdr", true);
     mat->skybox_tex = skybox_tex;
 
     Model model;

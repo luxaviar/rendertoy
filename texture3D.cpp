@@ -7,7 +7,7 @@
 
 namespace rendertoy {
 
-Texture3D::Texture3D(const char* filename) 
+Texture3D::Texture3D(const char* filename, bool sRGB) 
 {
     int width, height, origin_channel;
     float* data = (float*)image_loadf(filename, &width, &height, &origin_channel, 4);
@@ -26,7 +26,7 @@ Texture3D::Texture3D(const char* filename)
 
     for (int i = 0; i < face_data_offset.size(); ++i) {
         Vec2i offset = face_data_offset[i];
-        Texture2D tmp(data, offset, width, face_width, face_height, origin_channel);
+        Texture2D tmp(data, offset, width, face_width, face_height, origin_channel, sRGB);
         faces_[i].Swap(tmp);
     }
 

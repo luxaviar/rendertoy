@@ -26,7 +26,7 @@ public:
     }
 
     Texture2D* CreateTexture2D(const char* file, bool sRGB=false);
-    Texture3D* CreateTexture3D(const char* file);
+    Texture3D* CreateTexture3D(const char* file, bool sRGB=false);
 
     void AddModel(Model&& model);
     void AddLight(const Light& light);

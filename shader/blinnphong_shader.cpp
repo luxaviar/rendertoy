@@ -37,7 +37,7 @@ Vec4f BlinnPhongShader::Frag(const VertexOut& v2f) const {
         color += CalcLight(light, view_dir, mat->gloss, v2f, normal, albedo);
     }
 
-    return LinearToGammaSpace(color);
+    return color;
 }
 
 Vec3f BlinnPhongShader::CalcLight(const Light& light, const Vec3f& view_dir, float gloss, const VertexOut& v2f, const Vec3f& normal, const Vec3f& albedo) const {

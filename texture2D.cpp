@@ -37,7 +37,7 @@ Texture2D::Texture2D(const char* filename, bool sRGB, TextureWrapMode mode) :
     image_free(data);
 }
 
-Texture2D::Texture2D(float* data, const Vec2i& offset, int image_width, int width, int height, int origin_channel) : 
+Texture2D::Texture2D(float* data, const Vec2i& offset, int image_width, int width, int height, int origin_channel, bool sRGB) : 
     mode_(TextureWrapMode::kClamp),
     width_(width), 
     height_(height), 
@@ -49,7 +49,13 @@ Texture2D::Texture2D(float* data, const Vec2i& offset, int image_width, int widt
             int x = offset.x + j;
             int y = offset.y + i;
             float* pixel = data + (image_width * y + x) * 4;
-            texture_.Set(j, i, { pixel[0], pixel[1], pixel[2], pixel[3]});
+            if (sRGB) {
+                Vec3f color(pixel[0], pixel[1], pixel[2]);
+                color = GammaToLinearSpace(color);
+                texture_.Set(j, i, { color, pixel[3] });
+            } else {
+                texture_.Set(j, i, { pixel[0], pixel[1], pixel[2], pixel[3] });
+            }
         }
     }
 }

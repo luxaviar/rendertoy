@@ -16,7 +16,7 @@ class Texture2D : private Uncopyable {
 public:
     Texture2D();
     Texture2D(const char* filename, bool sRGB=false, TextureWrapMode mode=TextureWrapMode::kClamp);
-    Texture2D(float* data, const Vec2i& offset, int image_width, int width, int height, int origin_channel); //for HDR
+    Texture2D(float* data, const Vec2i& offset, int image_width, int width, int height, int origin_channel, bool sRGB=false); //for HDR
     Texture2D(Texture2D&& other) = default;
     Texture2D& operator =(Texture2D&& other) = default;
     void Swap(Texture2D& other) noexcept;

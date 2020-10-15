@@ -1,5 +1,6 @@
 #include "skybox_shader.h"
 #include "material/skybox_material.h"
+#include "color.h"
 
 namespace rendertoy {
 
@@ -17,8 +18,7 @@ VertexOut SkyboxShader::Vert(const Vertex& v) const {
 Vec4f SkyboxShader::Frag(const VertexOut& v2f) const {    
     const SkyboxMaterial* mat = static_cast<const SkyboxMaterial*>(uniform_->mat);
     Vec3f coord = v2f.world_position.Normalize();
-    Vec4f color = mat->skybox_tex->Sample3D(coord);
-    return color;
+    return mat->skybox_tex->Sample3D(coord);
 }
 
 }
