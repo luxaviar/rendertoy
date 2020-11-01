@@ -20,7 +20,30 @@ Yet another soft renderer for learning
 * HDR/linear lighting
 * tone mappers: ACES
 * MSAA(2x/4x)
+* Shadow(based on shadow map)
 
 ## Example
 
-![PBR](samples/output.png)
+wireframe
+
+![PBR](samples/output_wireframe.png)
+
+blinn-phong
+
+![PBR](samples/output_0.png)
+
+pbr
+
+![PBR](samples/output_1.png)
+
+![PBR](samples/output_2.png)
+
+msaax4
+
+![PBR](samples/output_msaax4.png)
+
+shadow
+
+![PBR](samples/output_shadow.png)
+
+![PBR](samples/shadow_map.png)
