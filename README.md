@@ -24,26 +24,21 @@ Yet another soft renderer for learning
 
 ## Example
 
-wireframe
-
+**Wireframe**
 ![PBR](samples/output_wireframe.png)
 
-blinn-phong
-
+**Blinn-phong**
 ![PBR](samples/output_0.png)
 
-pbr
-
+**PBR**
 ![PBR](samples/output_1.png)
 
 ![PBR](samples/output_2.png)
 
-msaax4
-
+**MSAAx4**
 ![PBR](samples/output_msaax4.png)
 
-shadow
-
+**Shadow**
 ![PBR](samples/output_shadow.png)
 
 ![PBR](samples/shadow_map.png)
