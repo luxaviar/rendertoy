@@ -28,8 +28,8 @@ public:
     TextureWrapMode warp_mode() const { return mode_; }
     void warp_mode(TextureWrapMode mode) { mode_ = mode; }
 
-    int height() const { return height_; }
-    int width() const { return width_; }
+    int height() const { return texture_.height(); }
+    int width() const { return texture_.width(); }
 
     const Buffer<Vec4f>& texture() const { return texture_; }
 
@@ -44,9 +44,8 @@ private:
     std::string file_name_;
     TextureWrapMode mode_;
 
-    int width_;
-    int height_;
     int origin_channel_;
+    Vec2f tex_size;
 
     Buffer<Vec4f> texture_;
 };

@@ -32,7 +32,7 @@ protected:
     Shader(const char* name) : write_depth_(true), write_color_(true), cull_(CullMode::kBack), name_(name), uniform_(nullptr) {}
 
     void SetShadowCoord(const Vertex& v, VertexOut& v2f) const;
-    bool IsInShadow(const Light& light, const VertexOut& v2f, float ndotl) const;
+    float CalcShadow(const Light& light, const VertexOut& v2f, float ndotl) const;
     
     bool write_depth_;
     bool write_color_;

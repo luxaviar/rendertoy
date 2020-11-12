@@ -99,10 +99,6 @@ Vec3f PbrShader::CalcLight(const Light& light, const VertexOut& v2f, const Vec3f
     float NoL = math::Clamp(normal.Dot(light_dir), 0.0f, 1.0f);
     if (NoL == 0.0f) return Vec3f::zero;
 
-    if (IsInShadow(light, v2f, NoL)) {
-        return Vec3f::zero;
-    }
-
     Vec3f h = (light_dir + view_dir).Normalize();
     float NoH = math::Clamp(normal.Dot(h), 0.0f, 1.0f);
     float NoV = math::Clamp(normal.Dot(view_dir), 0.0f, 1.0f);
@@ -132,7 +128,9 @@ Vec3f PbrShader::CalcLight(const Light& light, const VertexOut& v2f, const Vec3f
 
     // note that we already multiplied the BRDF by the Fresnel (ks) so we won't multiply by ks again
     Vec3f color = (kd * diffuse + specular) * light_color * NoL;
-    return color;
+
+    float shadow = CalcShadow(light, v2f, NoL);
+    return color * shadow;
 }
 
 Vec3f PbrShader::EvaluateIBL(const Vec3f& view_dir, const Vec3f& normal, const Vec3f& f0, 

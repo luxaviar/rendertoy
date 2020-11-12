@@ -13,7 +13,6 @@ public:
 protected:
     ShadowShader() : Shader("Shadow") { 
         write_color_ = false;
-        cull_ = CullMode::kFront;
     }
 };
 

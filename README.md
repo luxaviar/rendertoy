@@ -20,7 +20,7 @@ Yet another soft renderer for learning
 * HDR/linear lighting
 * tone mappers: ACES
 * MSAA(2x/4x)
-* Shadow(based on shadow map)
+* Shadow (based on shadow map & PCF)
 
 ## Example
 

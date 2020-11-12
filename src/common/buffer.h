@@ -24,11 +24,11 @@ inline Buffers operator&(Buffers a, Buffers b) {
 template <typename T>
 class Buffer : private Uncopyable {
 public:
-    Buffer(int width, int height) : width_(width), height_(height), data_(width * height) {
+    Buffer(int width, int height) : width_(width), height_(height), tex_size_(1.0f / width, 1.0f / height), data_(width * height) {
         // data_.resize(width * height);
     }
 
-    Buffer() : width_(0), height_(0) {
+    Buffer() : width_(0), height_(0), tex_size_(0.0f) {
 
     }
 
@@ -38,6 +38,7 @@ public:
     void Swap(Buffer<T>& other) noexcept {
         std::swap(width_, other.width_);
         std::swap(height_, other.height_);
+        std::swap(tex_size_, other.tex_size_);
         data_.swap(other.data_);
     }
 
@@ -48,10 +49,12 @@ public:
 
     int width() const { return width_; }
     int height() const { return height_; }
+    const Vec2f& tex_size() const { return tex_size_; }
 
     void Resize(int w, int h) {
         width_ = w;
         height_ = h;
+        tex_size_ = { 1.0f / w, 1.0f / h};
         data_.resize(w * h);
     }
 
@@ -105,9 +108,11 @@ public:
     }
 
 private:
-    std::vector<T> data_;
     int width_;
     int height_;
+    Vec2f tex_size_;
+
+    std::vector<T> data_;
 };
 
 }

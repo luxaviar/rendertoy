@@ -53,10 +53,6 @@ Vec3f BlinnPhongShader::CalcLight(const Light& light, const Vec3f& view_dir, flo
 
     float ndotl = math::Clamp(normal.Dot(light_dir), 0.0f, 1.0f);
 
-    if (IsInShadow(light, v2f, ndotl)) {
-        return Vec3f::zero;
-    }
-    
     Vec3f color = light_color * albedo * ndotl; //diffuse
     if (ndotl > 0.0f) {
         Vec3f h = (light_dir + view_dir).Normalize();
@@ -64,7 +60,9 @@ Vec3f BlinnPhongShader::CalcLight(const Light& light, const Vec3f& view_dir, flo
         color += light_color * albedo * std::pow(ndoth, gloss); //specular
     }
 
-    return color;
+    float shadow = CalcShadow(light, v2f, ndotl);
+
+    return color * shadow;
 }
 
 }

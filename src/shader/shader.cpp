@@ -12,15 +12,33 @@ void Shader::SetShadowCoord(const Vertex& v, VertexOut& v2f) const {
     }
 }
 
-bool Shader::IsInShadow(const Light& light, const VertexOut& v2f, float ndotl) const {    
+float Shader::CalcShadow(const Light& light, const VertexOut& v2f, float ndotl) const {
     if (&light == uniform_->shadow_light_) {
-        float depth = uniform_->shadow_light_->shadow_map->depth_buffer().Sample(v2f.shadow_coord.x, v2f.shadow_coord.y);
-        float depth_bias = math::Max(0.05f * (1 - ndotl), 0.005f);
-        if (v2f.shadow_coord.z - depth_bias > depth) { //current depth > depth
-            return true;
+        auto& shadow_coord = v2f.shadow_coord;
+        if (shadow_coord.z < 0.0f || shadow_coord.z > 1.0f) {
+            return 1.0f;
         }
+
+        auto& shadow_map = uniform_->shadow_light_->shadow_map->depth_buffer();
+
+        static constexpr int pcf_range = 2;
+
+        float result = 0.0f;
+        auto& tex_size = shadow_map.tex_size();
+        for (int i = -pcf_range; i < pcf_range; ++i) {
+            for (int j = -pcf_range; j < pcf_range; ++j) {
+                float depth = shadow_map.Sample(shadow_coord.x + tex_size.x * i, shadow_coord.y + tex_size.y * j);
+                float depth_bias = math::Max(0.05f * (1 - ndotl), 0.005f);
+                if (shadow_coord.z - depth_bias < depth) { //current depth < light depth -> in front of light depth -> not in shadow
+                    result += 1.0f;
+                }
+            }
+        }
+
+        return result / (pcf_range * 2 + 1);
     }
-    return false;
+
+    return 1.0f;
 }
 
 }

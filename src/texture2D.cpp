@@ -14,17 +14,16 @@ Texture2D::Texture2D() {
 Texture2D::Texture2D(const char* filename, bool sRGB, TextureWrapMode mode) : 
     file_name_(filename),
     mode_(mode),
-    width_(0), 
-    height_(0), 
     origin_channel_(0)
 {
-    uint8_t* data = image_load(filename, &width_, &height_, &origin_channel_, 4);
+    int width, height;
+    uint8_t* data = image_load(filename, &width, &height, &origin_channel_, 4);
     assert (data);
 
-    texture_.Resize(width_, height_);
-    for (int i = 0; i < height_; ++i) {
-        for (int j = 0; j < width_; ++j) {
-            uint8_t* pixel = data + (width_ * i + j) * 4;
+    texture_.Resize(width, height);
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
+            uint8_t* pixel = data + (width * i + j) * 4;
             if (sRGB) {
                 Vec3f color(pixel[0] / 255.0f, pixel[1] / 255.0f, pixel[2] / 255.0f);
                 color = GammaToLinearSpace(color);
@@ -39,13 +38,11 @@ Texture2D::Texture2D(const char* filename, bool sRGB, TextureWrapMode mode) :
 
 Texture2D::Texture2D(float* data, const Vec2i& offset, int image_width, int width, int height, int origin_channel, bool sRGB) : 
     mode_(TextureWrapMode::kClamp),
-    width_(width), 
-    height_(height), 
     origin_channel_(origin_channel)
 {
-    texture_.Resize(width_, height_);
-    for (int i = 0; i < height_; ++i) {
-        for (int j = 0; j < width_; ++j) {
+    texture_.Resize(width, height);
+    for (int i = 0; i < height; ++i) {
+        for (int j = 0; j < width; ++j) {
             int x = offset.x + j;
             int y = offset.y + i;
             float* pixel = data + (image_width * y + x) * 4;
@@ -62,8 +59,6 @@ Texture2D::Texture2D(float* data, const Vec2i& offset, int image_width, int widt
 
 void Texture2D::Swap(Texture2D& other) noexcept {
     std::swap(mode_, other.mode_);
-    std::swap(width_, other.width_);
-    std::swap(height_, other.height_);
     std::swap(origin_channel_, other.origin_channel_);
     std::swap(file_name_, other.file_name_);
     texture_.Swap(other.texture_);
@@ -101,13 +96,13 @@ Vec4f Texture2D::Sample2D(float u, float v) const {
 }
 
 void Texture2D::ConvertToImage(Buffer<Col3U8>& image_buffer) const {
-    assert(image_buffer.width() == width_);
-    assert(image_buffer.height() == height_);
+    assert(image_buffer.width() == texture_.width());
+    assert(image_buffer.height() == texture_.height());
 
-    for (int i = 0; i< height_; ++i) {
-        for (int j = 0;j < width_; ++j) {
+    for (int i = 0; i< texture_.height(); ++i) {
+        for (int j = 0;j < texture_.width(); ++j) {
             auto& col = texture_.Get(j, i);
-            image_buffer.Set(j, height_ - i - 1, Col3U8(col.r * 255.0f, col.g * 255.0f, col.b * 255.0f));
+            image_buffer.Set(j, texture_.height() - i - 1, Col3U8(col.r * 255.0f, col.g * 255.0f, col.b * 255.0f));
         }
     }
 }
